@@ -1,0 +1,228 @@
+plugins {
+    id 'com.android.application'
+}
+
+def appName = 'KernelSU Temporary Root'
+def appVersionName = '2.0'
+
+def gitVersionCode
+try {
+    def proc = ['git', 'rev-list', '--count', 'HEAD'].execute(null, project.projectDir)
+    proc.waitFor()
+    gitVersionCode = proc.text.trim().toInteger()
+} catch (Exception e) {
+    println "warning: git rev-list failed (${e.message}); versionCode falls back to 1"
+    gitVersionCode = 1
+}
+
+def supportedKernelsSrc = layout.buildDirectory.dir('generated/source/supportedKernels')
+def sharedOffsetsHeader = rootProject.file('src/kernels/offsets.h')
+def offsetFieldRe = /\.([A-Za-z0-9_]+)\s*=\s*(0[xX][0-9A-Fa-f]+|-?\d+)/
+
+def parseOffsetValue = { String text ->
+    if (text.length() > 2 && text.substring(0, 2).equalsIgnoreCase('0x')) {
+        // Use BigInteger to handle unsigned 64-bit values (like 0xffffff80...)
+        return new BigInteger(text.substring(2), 16).longValue()
+    }
+    return Long.parseLong(text)
+}
+
+def formatOffsetValue = { long value ->
+    value < 0 ? "${value}L" : "0x${Long.toHexString(value)}L"
+}
+
+def escapeJavaString = { String value ->
+    value.replace('\\', '\\\\').replace('"', '\\"')
+}
+
+// STRUCT_OFFSETS_* macros from src/kernels/offsets.h, expanded into field maps.
+def parseStructMacros = { String text ->
+    def macros = [:]
+    def lines = text.readLines()
+    for (int i = 0; i < lines.size(); i++) {
+        def m = lines[i] =~ /#define\s+(STRUCT_OFFSETS_[A-Za-z0-9_]+)\s*(.*)/
+        if (!m.matches()) {
+            continue
+        }
+        def name = m.group(1)
+        def body = m.group(2)
+        while (lines[i].trim().endsWith('\\')) {
+            i++
+            body += ' ' + lines[i]
+        }
+        def fields = [:]
+        def fm = body =~ offsetFieldRe
+        while (fm.find()) {
+            fields[fm.group(1)] = parseOffsetValue(fm.group(2))
+        }
+        macros[name] = fields
+    }
+    macros
+}
+
+// Per-kernel OFFSETS_ENTRY bodies: macro reference plus explicit overrides.
+def parseKernelEntries = { File header, macros ->
+    def text = header.text
+    def names = []
+    def entries = [:]
+    def matcher = text =~ /OFFSETS_ENTRY\(\s*"([^"]+)"/
+    while (matcher.find()) {
+        def release = matcher.group(1)
+        def tail = text.substring(matcher.end())
+        def endIdx = tail.indexOf('\n),')
+        def body = endIdx >= 0 ? tail.substring(0, endIdx) : tail
+        names << release
+        def fields = [:]
+        def macroMatch = body =~ /STRUCT_OFFSETS_[A-Za-z0-9_]+/
+        if (macroMatch.find()) {
+            def base = macros[macroMatch.group()]
+            if (base != null) {
+                fields.putAll(base)
+            }
+        }
+        def fm = body =~ offsetFieldRe
+        while (fm.find()) {
+            fields[fm.group(1)] = parseOffsetValue(fm.group(2))
+        }
+        entries[release] = fields
+    }
+    [names: names, entries: entries]
+}
+
+// Composite Build.MODEL + "_" + Build.DISPLAY values from imported OFFSETS_ENTRY records.
+def parseBuildIds = { String text ->
+    def ids = []
+    def matcher = text =~ /OFFSETS_ENTRY\(\s*(?:NULL|"[^"]+")\s*,\s*"([^"]+)"(?:\s*,\s*[^,)]+){0,1}(?:\s*,\s*[^)]*)?\)/
+    while (matcher.find()) {
+        ids << matcher.group(1)
+    }
+    ids
+}
+
+    tasks.register('generateSupportedKernels') {
+        def offsets = fileTree(rootProject.projectDir) {
+            include 'src/kernels/*/offsets.h'
+        }
+        def outFile = supportedKernelsSrc.map { it.file('com/ghostlock/app/SupportedKernels.java') }
+        inputs.files(offsets)
+        inputs.file(sharedOffsetsHeader)
+        outputs.file(outFile)
+        doLast {
+            def macros = parseStructMacros(sharedOffsetsHeader.text)
+            def allNames = []
+            def allBuildIds = []
+            def builtins = [:]
+            
+            // Scan subdirectories
+            offsets.each { f ->
+                def parsed = parseKernelEntries(f, macros)
+                allNames.addAll(parsed.names)
+                allBuildIds.addAll(parseBuildIds(f.text))
+                builtins.putAll(parsed.entries)
+            }
+            
+            // Also scan the main offsets.h file
+            def mainParsed = parseKernelEntries(sharedOffsetsHeader, macros)
+            allNames.addAll(mainParsed.names)
+            allBuildIds.addAll(parseBuildIds(sharedOffsetsHeader.text))
+            builtins.putAll(mainParsed.entries)
+            
+            def names = allNames.unique()
+            def buildIds = allBuildIds.unique()
+        def sb = new StringBuilder()
+        sb << "package com.myghostlock.fire;\n\n"
+        sb << "import java.util.Collections;\n"
+        sb << "import java.util.HashMap;\n"
+        sb << "import java.util.Map;\n\n"
+        sb << "/** Generated from kernel offset headers; do not edit. */\n"
+        sb << "public final class SupportedKernels {\n"
+        sb << "    public static final String[] UNAMES = {\n"
+        names.each { name ->
+            sb << "        \"${escapeJavaString(name)}\",\n"
+        }
+        sb << "    };\n\n"
+        sb << "    public static final String[] BUILD_IDS = {\n"
+        buildIds.each { id ->
+            sb << "        \"${escapeJavaString(id)}\",\n"
+        }
+        sb << "    };\n\n"
+        sb << "    /** Built-in release -> field -> value (STRUCT_OFFSETS_* macros expanded). */\n"
+        sb << "    public static final Map<String, Map<String, Long>> BUILTIN = builtin();\n\n"
+        sb << "    private static Map<String, Map<String, Long>> builtin() {\n"
+        sb << "        Map<String, Map<String, Long>> builtin = new HashMap<>();\n"
+        builtins.each { release, fields ->
+            sb << "        {\n"
+            sb << "            Map<String, Long> e = new HashMap<>();\n"
+            fields.each { key, value ->
+                sb << "            e.put(\"${escapeJavaString(key)}\", ${formatOffsetValue(value)});\n"
+            }
+            sb << "            builtin.put(\"${escapeJavaString(release)}\", Collections.unmodifiableMap(e));\n"
+            sb << "        }\n"
+        }
+        sb << "        return Collections.unmodifiableMap(builtin);\n"
+        sb << "    }\n\n"
+        sb << "    private SupportedKernels() {}\n"
+        sb << "}\n"
+        def file = outFile.get().asFile
+        file.parentFile.mkdirs()
+        file.text = sb.toString()
+    }
+}
+
+android {
+    namespace = 'com.myghostlock.fire'
+    compileSdk {
+        version = release(37)
+    }
+
+    defaultConfig {
+        applicationId "com.myghostlock.fire"
+        minSdk 33
+        targetSdk 35
+        versionCode gitVersionCode
+        versionName appVersionName
+        ndk {
+            //noinspection ChromeOsAbiSupport
+            abiFilters "arm64-v8a"
+        }
+    }
+
+    sourceSets {
+        main {
+            java.srcDir(supportedKernelsSrc.get())
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.debug
+        }
+        debug {
+            minifyEnabled false
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    enableKotlin = false
+
+    packaging {
+        jniLibs {
+            useLegacyPackaging = true
+        }
+    }
+}
+
+tasks.named('preBuild') {
+    dependsOn(rootProject.tasks.named('prepareGhostlockJniLibs'))
+    dependsOn(tasks.named('generateSupportedKernels'))
+}
+
+base {
+    archivesName = "${appName}-v${appVersionName}(${gitVersionCode})"
+}

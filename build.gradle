@@ -1,0 +1,48 @@
+plugins {
+    id 'com.android.application' version '9.3.1' apply false
+}
+
+def resolveNdkDir() {
+    def ndkEnv = System.getenv('ANDROID_NDK_HOME') ?: System.getenv('ANDROID_NDK_ROOT')
+    if (ndkEnv) {
+        return ndkEnv
+    }
+    def props = new Properties()
+    def propsFile = rootProject.file('local.properties')
+    if (propsFile.isFile()) {
+        propsFile.withInputStream { props.load(it) }
+    }
+    def ndkProp = props.getProperty('ndk.dir')
+    if (ndkProp) {
+        return ndkProp
+    }
+    def sdkDir = props.getProperty('sdk.dir') ?: System.getenv('ANDROID_HOME')
+    if (sdkDir) {
+        def ndkRoot = new File(sdkDir, 'ndk')
+        def versions = ndkRoot.listFiles()?.findAll { it.isDirectory() }?.collect { it.name } ?: []
+        if (versions) {
+            versions.sort()
+            return new File(ndkRoot, versions.last()).absolutePath
+        }
+    }
+    throw new GradleException('NDK not found; set ANDROID_NDK_HOME or ndk.dir in local.properties')
+}
+
+tasks.register('buildGhostlockNative', Exec) {
+    workingDir rootDir
+    commandLine 'make', 'ghostlock'
+    environment 'ANDROID_NDK_HOME', resolveNdkDir()
+    environment 'NDK_ROOT', resolveNdkDir()
+    inputs.files(
+        fileTree('src') { include '**/*.c', '**/*.h' },
+        file('Makefile')
+    )
+    outputs.file(file('ghostlock'))
+}
+
+tasks.register('prepareGhostlockJniLibs', Copy) {
+    dependsOn('buildGhostlockNative')
+    from('ghostlock')
+    into('app/src/main/jniLibs/arm64-v8a')
+    rename { 'libghostlock.so' }
+}

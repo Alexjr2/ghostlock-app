@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">KernelSU Temporary Root</string>
+    <string name="action_run">Run</string>
+    <string name="action_running">Running…</string>
+    <string name="action_advanced">Advanced</string>
+    <string name="action_check_cve">Check CVE-2026-43499 compatibility</string>
+    <string name="cve_title">CVE-2026-43499 result</string>
+    <string name="cve_release">Kernel release: %1$s</string>
+    <string name="cve_version_evidence">Version evidence: %1$s</string>
+    <string name="cve_likely_affected">Potentially affected: this release is below the upstream stable fix threshold. Vendor backports can change the actual state.</string>
+    <string name="cve_likely_patched">Likely patched: this release meets the upstream stable fix threshold. Do not attempt this app\'s CVE-2026-43499 path.</string>
+    <string name="cve_inconclusive">Inconclusive: a version string alone cannot determine the state of a custom or vendor-backported kernel.</string>
+    <string name="cve_path_ready">App path: offsets for this kernel are available. The path can only be considered after all runtime prerequisites are met.</string>
+    <string name="cve_path_no_offsets">App path: this APK has no offsets for the current kernel, so this root path is not supported.</string>
+    <string name="cve_path_unsupported_arch">App path: this APK only contains an ARM64 implementation, so the current device architecture is not supported.</string>
+    <string name="cve_path_not_recommended">App path: the CVE route appears patched; this APK should not attempt its GhostLock root path.</string>
+    <string name="cve_disclaimer">Check only verifies conditions and does not run root. The Run button is what attempts root.</string>
+    <string name="cve_status_affected">Result: vulnerability may be present</string>
+    <string name="cve_status_confirmed">Result: vulnerability CONFIRMED (via runtime probe)</string>
+    <string name="cve_status_patched">Result: vulnerability may be patched</string>
+    <string name="cve_status_unknown">Result: cannot determine</string>
+    <string name="cve_advice_try">You may try root: built-in offsets are available and the vulnerability may be present. All prerequisites are met.</string>
+    <string name="cve_advice_patched">Advice: do not run. The vulnerability path used by this app appears patched.</string>
+    <string name="cve_advice_no_offsets">Advice: do not run. This kernel has no offsets, so root is not supported.</string>
+    <string name="cve_advice_unsupported_arch">Advice: do not run. This device is not ARM64, so root is not supported.</string>
+    <string name="cve_advice_unknown">Advice: do not run yet. The vulnerability state cannot be determined.</string>
+    <string name="cancel">Cancel</string>
+    <string name="action_export_log">Export debug log (ghostlock.log)</string>
+    <string name="export_log_success">Log exported to Downloads folder</string>
+    <string name="export_log_failed">Failed to export log: %1$s</string>
+    <string name="export_log_not_found">Log file not found; has the exploit been run?</string>
+    <string name="action_copy">Copy</string>
+    <string name="copied">Log copied</string>
+    <string name="log_title">Log</string>
+    <string name="device_label">Device</string>
+    <string name="kernel_label">kernel</string>
+    <string name="kernel_supported">Supported</string>
+    <string name="kernel_unsupported">Not supported</string>
+    <string name="cpu_pair_label">CPU cores</string>
+</resources>
