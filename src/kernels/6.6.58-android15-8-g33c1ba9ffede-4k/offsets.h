@@ -1,5 +1,11 @@
-/* Redmi 12 4G (fire) MT6768*/
-/* 6.6.58-android15-8-g33c1ba9ffede-4k */
+/* Redmi 12 4G (fire), MT6768.
+ * This entry is intentionally per-release:
+ *   - symbols: matching Fire vmlinux/kallsyms
+ *   - task/cred fields: Fire BTF layout
+ *   - kernel_phys_load: Fire boot/runtime memory mapping
+ *   - pselect_waiter_shift: Fire stack-layout measurement
+ *   - payload-local offsets remain in src/core/target.h and are not kernel RVAs.
+ */
 
 OFFSETS_ENTRY(
     "6.6.58-android15-8-g33c1ba9ffede-4k",
