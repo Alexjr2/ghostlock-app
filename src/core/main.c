@@ -357,6 +357,8 @@ int run_main_route_threads(void) {
   atomic_store(&punch_consume_go, 0);
   atomic_store(&punch_consume_stop, 1);
   atomic_store(&owner_stop, 1);
+  for (int i = 0; i < 200 && atomic_load(&consumer_inflight); i++)
+    usleep(1000);
   pthread_join(waiter, NULL);
   pthread_join(owner, NULL);
   pthread_join(consumer, NULL);
