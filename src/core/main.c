@@ -158,15 +158,22 @@ static int select_offsets(void) {
         strcmp(uts.release, known_offsets[i].uname_r) == 0;
     int build_matches = known_offsets[i].build_id && build_id &&
         strcmp(build_id, known_offsets[i].build_id) == 0;
-    if (release_matches || build_matches) {
-      active_offsets = &known_offsets[i];
-      pr_success("offsets matched: %s%s%s\n",
-                 active_offsets->uname_r ? active_offsets->uname_r : "build-id",
-                 build_matches && !release_matches ? " via build id " : "",
-                 build_matches && !release_matches ? build_id : "");
-      publish_active_offsets();
-      return 0;
+    /* The release selects the kernel table; build_id is an extra guard.
+     * Never select a table for a different uname just because its device
+     * identifier happens to match. */
+    if (!release_matches) continue;
+    if (known_offsets[i].build_id && build_id && !build_matches) {
+      pr_error("build id mismatch for %s: expected %s, got %s\n",
+               known_offsets[i].uname_r, known_offsets[i].build_id, build_id);
+      return -1;
     }
+    active_offsets = &known_offsets[i];
+    pr_success("offsets matched: %s%s%s\n",
+               active_offsets->uname_r,
+               build_matches ? " build-id " : "",
+               build_matches ? build_id : "");
+    publish_active_offsets();
+    return 0;
   }
   pr_error("no offsets for kernel: %s\n", uts.release);
   pr_error("add this kernel to src/kernels and rebuild\n");
