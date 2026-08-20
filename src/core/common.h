@@ -16,13 +16,17 @@
 #endif
 #define VMEMMAP_END   0xffff800040000000ULL
 #define DIRECT_MAP_BASE 0xffffff8000000000ULL
+#ifndef STRUCT_PAGE_SIZE
 #define STRUCT_PAGE_SIZE 0x40
+#endif
 
+#ifndef CFG_PAGE_OFF
 #define CFG_PAGE_OFF            16
 #define CFG_NEEDS_READ_FILL_OFF 80
 #define CFG_BIN_BUFFER_OFF      88
 #define CFG_BIN_BUFFER_SIZE_OFF 96
 #define CFG_CB_MAX_SIZE_OFF     100
+#endif
 
 #include <dirent.h>
 #include <errno.h>
