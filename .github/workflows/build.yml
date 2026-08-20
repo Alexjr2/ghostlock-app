@@ -52,6 +52,7 @@ jobs:
 
       - name: Build Release APK
         run: |
+          chmod +x ./gradlew
           export ONDK_HOME="${{ runner.temp }}/ondk"
           export ANDROID_NDK_HOME="$ONDK_HOME"
           export NDK_ROOT="$ONDK_HOME"
