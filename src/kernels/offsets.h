@@ -32,8 +32,9 @@ struct kernel_offsets {
   /* BTF struct fields for this exact kernel; 0 uses target.h defaults. */
   uint32_t task_prio, task_normal_prio, task_sched_task_group;
   uint32_t task_pi_lock, task_pi_waiters, task_pi_top_task, task_pi_blocked_on;
-  uint32_t task_pid, task_tgid, task_atomic_flags;
+  uint32_t task_pid, task_tgid, task_real_parent, task_atomic_flags;
   uint32_t task_real_cred, task_cred, task_comm, task_tasks, task_seccomp;
+  uint32_t mm_owner;
   uint32_t task_vr_tag_a, task_vr_tag_b, task_flags, task_thread_info_flags_bit;
 };
 
@@ -45,13 +46,13 @@ struct kernel_offsets {
   .task_prio = 0x84, .task_normal_prio = 0x8c, .task_sched_task_group = 0x348, \
   .task_pi_lock = 0x90c, .task_pi_waiters = 0x920,                             \
   .task_pi_top_task = 0x930, .task_pi_blocked_on = 0x938,                      \
-  .task_pid = 0x618, .task_tgid = 0x61c,                                       \
+  .task_pid = 0x618, .task_tgid = 0x61c, .task_real_parent = 0x628,            \
   .task_atomic_flags = 0x5d8, .task_real_cred = 0x818, .task_cred = 0x820,     \
   .task_comm = 0x830, .task_tasks = 0x550, .task_seccomp = 0x8e8
 
 static const struct kernel_offsets known_offsets[] = {
 /* Add new kernels by creating src/kernels/<uname-release>/offsets.h */
-#include "6.6.58-android15-8-g33c1ba9ffede-4k/offsets.h"
+#include "fire/offsets.h"
 /* Single-line entries for standalone versions */
 		  { .uname_r = NULL }
 };
