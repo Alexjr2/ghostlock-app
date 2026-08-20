@@ -35,6 +35,8 @@ struct kernel_offsets {
   uint32_t task_pid, task_tgid, task_real_parent, task_atomic_flags;
   uint32_t task_real_cred, task_cred, task_comm, task_tasks, task_seccomp;
   uint32_t mm_owner;
+  /* Exact sizeof(struct mm_struct); 0 uses the generic fallback. */
+  uint32_t mm_struct_sz;
   uint32_t task_vr_tag_a, task_vr_tag_b, task_flags, task_thread_info_flags_bit;
 };
 
