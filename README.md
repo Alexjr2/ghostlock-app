@@ -1,83 +1,88 @@
-# GhostLock-App
+# GhostLock Fire
 
-## Supported Devices
+Fire-only build for the Redmi 12 4G powered by MediaTek MT6768.
 
-| Kernel                                                 | Devices                                         |
-| ------------------------------------------------------ | ----------------------------------------------- |
-| `6.6.77-android15-8-g4a507830d890-ab13636293-4k`       | Xiaomi Civi 5 Pro, REDMI K90 / 4 Turbo, POCO F7 |
-| `6.6.77-android15-8-g63ce7556864c-ab13994517-4k`       | Xiaomi 15                                       |
-| `6.6.77-android15-8-gca30f3b4bef6-abogki440974771-4k`  | Xiaomi 15 Pro, REDMI K80 Pro / K80 Ultra        |
-| `6.6.89-android15-8-g096cdb6ecefc-ab14358676-4k`       | OPPO Pad 4 Pro                                  |
-| `6.6.89-android15-8-gf4dc45704e54-abogki446052083-4k`  | OnePlus 13                                      |
-| `6.6.102-android15-8-gb01b41c2647c-ab15574720-4k`      | Xiaomi 17T                                      |
-| `6.6.102-android15-8-gfe76d1bc97fd-ab14689815-4k`      | Xiaomi 17T                                      |
-| `6.6.118-android15-8-g2e6b9c3812c5-ab15114928-4k`      | OPPO Find N5                                    |
-| `6.6.118-android15-8-g93e223c276e7-abogki500782043-4k` | OPPO Find X8 Ultra, OnePlus 13 / ACE 5 Pro      |
-| `6.6.118-android15-8-g608a629fedf7-ab15154340-4k`      | REDMI K90 Ultra                                 |
-| `6.6.118-android15-8-gc44b714366cc-abogki519650608-4k` | REDMI K80 Pro / Turbo 5 Max, POCO X8 Pro Max    |
-| `6.6.118-android15-8-ge56cf6b09cca-ab15511674-4k`      | REDMI K90 Ultra, POCO F7                        |
-| `6.6.118-android15-8-ge58033dc8ea6-abogki498046332-4k` | OPPO Pad 5, OnePlus Pad 2                       |
-| `6.6.118-android15-8-gebdfad32d749-ab15099304-4k`      | OPPO Find X8 / Find X8 Pro                      |
-| `6.12.23-android16-5-g16e473de48a3-abogki462654244-4k` | REDMI K90 Pro Max                               |
-| `6.12.23-android16-5-g75e9b1c7ae7c-abogki463945075-4k` | Xiaomi 17 / 17 Pro / 17 Pro Max / 17 Ultra      |
-| `6.12.23-android16-5-g82efd98459a2-ab14457512-4k`      | OPPO Find X9 / Find X9 Pro                      |
-| `6.12.23-android16-5-ga8f88ad96df3-ab13929693-4k`      | OnePlus 15                                      |
-| `6.12.23-android16-5-gb2a876903b49-ab14541642-4k`      | OnePlus 15                                      |
-| `6.12.23-android16-5-gf1bdb13583da-ab13761046-4k`      | Red Magic 11 Pro                                |
-| `6.12.38-android16-5-g844001fb8721-ab14552068-4k`      | OnePlus 15T                                     |
+## Supported target
 
-Kernels are matched by exact `uname -r`; unsupported builds are rejected and the app shows the status at the top. Offsets live in `src/kernels/<uname-release>/offsets.h` — add new builds with the extractor's `--register`.
+This source supports one exact kernel release:
 
-## Quick Start
+```text
+6.6.58-android15-8-g33c1ba9ffede-4k
+```
 
-Open **GhostLock** and tap **Run**. KernelSU (`me.weishu.kernelsu`) or ReSukiSU (`com.resukisu.resukisu`) provides `ksud` for module loading; without it, W1/W2 still grant uid 0 but no module is loaded.
+The matching device build identifier is:
 
-The route races two cores: the main thread hammers `pselect` while a consumer thread perturbs the waiter's priority. The pair defaults to the big cores (fallback 0/1), overridable via `GHOSTLOCK_CORE` / `GHOSTLOCK_CONSUMER_CORE`.
+```text
+23053RN02A_AP3A.240905.015.A2
+```
 
-## Command-Line Debugging
+The runtime offset entry is [src/kernels/fire/offsets.h](src/kernels/fire/offsets.h). It contains the Fire-specific kernel symbols, task layout, physical load address, and pselect waiter shift. The payload layout is defined separately in [src/core/target.h](src/core/target.h).
 
-adb/shell has no seccomp filter, so W3 is skipped - handy for quick verification:
+Other kernel releases are rejected. Do not reuse the Fire offsets for another device or kernel build.
+
+## Build
+
+The Makefile uses the Android NDK side-by-side toolchain and builds an arm64 PIE binary:
 
 ```powershell
+cd ghostlock-app
+make clean
 make ghostlock
+```
+
+The output binary is:
+
+```text
+ghostlock-app/ghostlock
+```
+
+On Windows, set `ANDROID_HOME` or `LOCALAPPDATA` so the Makefile can locate the installed Android NDK.
+
+## ADB testing
+
+Push the binary and make it executable:
+
+```powershell
 adb push ghostlock /data/local/tmp/ghostlock
 adb shell chmod 755 /data/local/tmp/ghostlock
-adb shell /data/local/tmp/ghostlock
 ```
 
-## Offset Extraction
-
-`tools/extract_rs` derives offsets from a `boot.img` (plus optional `xbl_config.img`), a full OTA ZIP, or an `http(s)` URL pointing at one. kallsyms come from `--kallsyms` or are recovered from the image's embedded table. `pselect_waiter_shift` and `off_slide_loggers_0_1` are derived by the built-in arm64 disassembler. MediaTek images have no `xbl_config.img` and usually no BTF: the physical load address is derived from kallsyms `_text` (override with `--phys`).
+Run the non-destructive runtime compatibility check first:
 
 ```powershell
-cargo build --release --manifest-path tools/extract_rs/Cargo.toml
-tools/extract_rs/target/release/ghostlock-extract.exe boot.img --xbl-config xbl_config.img --register
-tools/extract_rs/target/release/ghostlock-extract.exe OTA.zip --format json --out offsets.json
+adb shell /data/local/tmp/ghostlock --check
 ```
 
-`--register` saves the table under `src/kernels/<uname-release>/offsets.h`; `--format c --out offsets.h` dumps a standalone header.
+The check should report the exact kernel release and the runtime PI result. A successful compatibility check only confirms the trigger condition; it does not confirm that every later exploit stage will succeed.
 
-### On-device analysis
+## CPU selection
 
-A full OTA can be analyzed entirely on the phone: `boot` plus `xbl_config`
-are extracted automatically. Pass `--work-dir` an app-writable dir when
-running inside the app sandbox. Cross-compile and push:
+The default pair is main CPU `0` and consumer CPU `1`. Override it from the shell when testing a permitted pair:
 
 ```powershell
-rustup target add aarch64-linux-android
-$ndk = "$env:ANDROID_HOME\ndk\29.0.14206865\toolchains\llvm\prebuilt\windows-x86_64\bin"
-$env:CC_aarch64_linux_android = "$ndk\aarch64-linux-android35-clang.cmd"
-$env:AR_aarch64_linux_android = "$ndk\llvm-ar.exe"
-$env:CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER = $env:CC_aarch64_linux_android
-cargo build --release --target aarch64-linux-android --manifest-path tools/extract_rs/Cargo.toml
-adb push tools/extract_rs/target/aarch64-linux-android/release/ghostlock-extract /data/local/tmp/
-adb shell /data/local/tmp/ghostlock-extract /sdcard/OTA.zip
+adb shell "GHOSTLOCK_CORE=6 GHOSTLOCK_CONSUMER_CORE=7 /data/local/tmp/ghostlock"
 ```
 
-## Credits & License
+The program prints the selected pair at startup. Keep the two CPUs different and use the device's available CPU range.
 
-Based on the following projects, licensed under Apache License 2.0 (see [LICENSE](LICENSE)):
+## Offset evidence
 
-- [NebuSec/CyberMeowfia](https://github.com/NebuSec/CyberMeowfia)
-- [JoinChang/ghostlock-oneplus](https://github.com/JoinChang/ghostlock-oneplus)
-- [x-spy/CVE-2026-43499-popsicle](https://github.com/x-spy/CVE-2026-43499-popsicle)
+Fire layout data is kept in the workspace for verification:
+
+- `btf_layout.json`
+- `offsets.json`
+- `fire-vmlinux.elf`
+- `src/kernels/fire/offsets.h`
+
+`offsets.json` and the extractor are reference tooling only. The runtime binary selects offsets from the compiled kernel registry and does not import an external JSON file.
+
+## Safety notes
+
+- Use `--check` before any exploit run.
+- Do not run the binary against an unsupported kernel.
+- A failed heap-spray or `mm_struct` leak can trigger retries and may destabilize the device.
+- Keep a current pstore log when investigating a reboot or kernel panic.
+
+## License
+
+See [LICENSE](LICENSE) for the project license and attribution details.
