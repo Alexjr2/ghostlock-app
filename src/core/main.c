@@ -128,7 +128,7 @@ static void publish_active_offsets(void) {
     p0_kernel_phys_load = active_offsets->kernel_phys_load;
   }
   int mtk = soc_is_mtk();
-  if (mtk) {
+  if (mtk && !active_offsets->kernel_phys_load) {
     p0_kernel_phys_load = KIMAGE_TEXT_BASE - MTK_VADDR_BASE;
   }
   pr_info("soc: %s; kernel_phys_load=0x%llx\n",
