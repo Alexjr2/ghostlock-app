@@ -131,7 +131,4 @@ extern const struct kernel_offsets *active_offsets;
 #define TASK_THREAD_INFO_FLAGS_BIT _RSO(task_thread_info_flags_bit, 0x400)
 #define MM_OWNER_OFF             _RSO(mm_owner, 0x410)
 
-#undef MM_STRUCT_SZ
-#define MM_STRUCT_SZ             _RSO(mm_struct_sz, 0x500)
-
 #endif
