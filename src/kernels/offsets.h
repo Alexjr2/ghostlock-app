@@ -15,6 +15,7 @@ struct kernel_offsets {
   uint64_t phys_offset;
   /* pselect fd_set waiter word shift; 0 uses target.h default. */
   int pselect_waiter_shift;
+  /* Global symbols: extracted from kallsyms or the matching vmlinux. */
   uint64_t off_init_task, off_init_cred, off_init_uts_ns, off_empty_zero_page;
   uint64_t off_root_task_group, off_selinux_enforcing, off_kptr_restrict;
   uint64_t off_selinux_blob_sizes, off_security_hook_heads, off_kmalloc_caches;
@@ -28,7 +29,7 @@ struct kernel_offsets {
   uint64_t off_call_usermodehelper_exec_work;
   uint64_t off_slide_nfulnl_logger, off_slide_loggers_0_1, off_slide_boot_id;
 
-  /* Per-kernel struct offsets; 0 uses target.h defaults. */
+  /* BTF struct fields for this exact kernel; 0 uses target.h defaults. */
   uint32_t task_prio, task_normal_prio, task_sched_task_group;
   uint32_t task_pi_lock, task_pi_waiters, task_pi_top_task, task_pi_blocked_on;
   uint32_t task_pid, task_tgid, task_atomic_flags;
@@ -40,6 +41,7 @@ struct kernel_offsets {
 
 
 #define STRUCT_OFFSETS_6_6_FIRE                                             \
+  /* BTF: task_struct fields for Fire 6.6.58. */                         \
   .task_prio = 0x84, .task_normal_prio = 0x8c, .task_sched_task_group = 0x348, \
   .task_pi_lock = 0x90c, .task_pi_waiters = 0x920,                             \
   .task_pi_top_task = 0x930, .task_pi_blocked_on = 0x938,                      \
