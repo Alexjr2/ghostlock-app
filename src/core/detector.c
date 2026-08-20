@@ -50,11 +50,13 @@ static long xfutex(uint32_t *u, int op, uint32_t val,
 
 static void *owner_fn(void *unused) {
     pid_t tid = (pid_t)syscall(SYS_gettid);
+    pr_info("detector owner tid=%d cpu=%d\n", tid, sched_getcpu());
     atomic_store(&a_futex2, (uint32_t)tid);
     futex2 = (uint32_t)tid;
     atomic_store(&o_ready, 1);
     while (!atomic_load(&w_ready)) sched_yield();
     atomic_store(&o_blocking, 1);
+    pr_info("detector owner PI-lock tid=%d cpu=%d\n", tid, sched_getcpu());
     xfutex(&cycle_futex, FLPI, 0, NULL, NULL, 0);
     xfutex(&cycle_futex, FUPI, 0, NULL, NULL, 0);
     return NULL;
@@ -62,6 +64,7 @@ static void *owner_fn(void *unused) {
 
 static void *waiter_fn(void *unused) {
     pid_t tid = (pid_t)syscall(SYS_gettid);
+    pr_info("detector waiter tid=%d cpu=%d\n", tid, sched_getcpu());
     struct timespec ts;
     while (!atomic_load(&o_ready)) sched_yield();
     atomic_store(&a_cycle_futex, (uint32_t)tid);
@@ -72,6 +75,8 @@ static void *waiter_fn(void *unused) {
     atomic_store(&w_waiting, 1);
     clock_gettime(CLOCK_MONOTONIC, &ts);
     ts.tv_sec += 1;
+    pr_info("detector waiter WAIT_REQUEUE_PI tid=%d cpu=%d\n",
+            tid, sched_getcpu());
     xfutex(&futex1, FWRQ, 0, &ts, &futex2, 0);
     return NULL;
 }
@@ -96,6 +101,7 @@ int probe_vulnerability(void) {
     while (!atomic_load(&w_waiting)) sched_yield();
     usleep(40000);
 
+    pr_info("detector CMP_REQUEUE_PI cpu=%d\n", sched_getcpu());
     long ret = xfutex(&futex1, FCRQ, 1, (void *)1, &futex2, 0);
     int err = errno;
 
