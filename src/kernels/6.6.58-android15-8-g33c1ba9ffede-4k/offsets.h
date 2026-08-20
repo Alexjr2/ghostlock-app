@@ -3,6 +3,7 @@
 
 OFFSETS_ENTRY(
     "6.6.58-android15-8-g33c1ba9ffede-4k",
+    .build_id = "23053RN02A_AP3A.240905.015.A2",
     STRUCT_OFFSETS_6_6_FIRE,
     .kernel_phys_load = 0x40000000,
     .phys_offset = 0x40000000,
