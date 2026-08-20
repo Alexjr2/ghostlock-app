@@ -13,6 +13,7 @@ OFFSETS_ENTRY(
     .phys_offset = 0x40000000,
     STRUCT_OFFSETS_6_6_FIRE,
     .mm_owner = 0x408,
+    .mm_struct_sz = 0x4c0,
     .pselect_waiter_shift = -2,
     .build_id = "23053RN02A_AP3A.240905.015.A2",
     .off_init_task = 0x0213e280,
